@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/odevine/mimic/compare/ui/v0.8.1...ui/v0.9.0) (2026-09-27)
+
+
+### Features
+
+* **ui:** add the mimic icon as the favicon and topbar mark ([e937a4f](https://github.com/odevine/mimic/commit/e937a4fb24a75aa7ebe39e0ec74c43f132905326))
+
 ## [0.8.1](https://github.com/odevine/mimic/compare/ui/v0.8.0...ui/v0.8.1) (2026-09-27)
 
 

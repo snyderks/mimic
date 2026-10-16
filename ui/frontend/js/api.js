@@ -111,6 +111,7 @@ const IMAGES = [{ name: "Images", pattern: "*.png;*.jpg;*.jpeg" }];
 const FONTS = [{ name: "Fonts", pattern: "*.ttf;*.otf" }];
 const PNGS = [{ name: "PNG images", pattern: "*.png" }];
 const BUNDLES = [{ name: "mimic templates", pattern: "*.mimic" }];
+const PSDS = [{ name: "Photoshop documents", pattern: "*.psd" }];
 
 const SYSTEM = "System";
 
@@ -118,6 +119,8 @@ const SYSTEM = "System";
 // cancelled the dialog
 const pickFile = (req) => rpc(SYSTEM, "PickFile", req);
 const pickFolder = (req) => rpc(SYSTEM, "PickFolder", req);
+// pickFiles resolves to the paths chosen, or an empty list when the user cancelled
+const pickFiles = (req) => rpc(SYSTEM, "PickFiles", req);
 
 // payload is the data of a window event, which arrives as the value itself or
 // as a one-element list of it
@@ -207,6 +210,18 @@ export const api = {
   // version, active, now }. active says it was the template in use, which the app switched away
   // from to the template named by now
   removeTemplate: (template, version) => rpc("Templates", "Remove", { template, version }),
+  // importProxyshop asks for one Proxyshop PSD, or the front and back PSDs of one
+  // template, and starts converting them into a template the library lists. It
+  // resolves to { jobId }, or null when the user cancelled. The job's progress
+  // names each part as it is drawn, and its last event carries imported, as
+  // { id, name, version, notes }
+  importProxyshop: async () => {
+    const paths = await pickFiles({ title: "Choose a Proxyshop PSD, or the front and back of one template", filters: PSDS });
+    if (!paths || !paths.length) return null;
+    return { jobId: await rpc("Templates", "ImportProxyshop", paths) };
+  },
+  importEvents: (jobId, onStep) => watchJob(jobId, onStep),
+  cancelImport: (jobId) => rpc("Templates", "CancelImport", jobId),
   // setTemplateFeature keeps the value chosen for one feature of an installed
   // template, and resolves to the template's details with it in force. A null
   // value takes the choice back

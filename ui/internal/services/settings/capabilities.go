@@ -89,6 +89,8 @@ var features = []feature{
 	{key: "editor.export", state: gateLive},
 	{key: "editor.coverage", state: gateLive},
 
+	{key: "templates.importProxyshop", state: gateLive},
+
 	{key: "output.mpc", state: gateLive},
 	{key: "output.pdf", state: gatePlanned, reason: "Print sheets are planned. Tracked in #85"},
 }

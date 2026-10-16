@@ -39,6 +39,17 @@ type Event struct {
 	// warm-up, in milliseconds and cards, and are zero on every other
 	Warmup      int64 `json:"warmupMs,omitempty"`
 	WarmupCards int   `json:"warmupCards,omitempty"`
+	// Imported rides on the done event of a template import that succeeded
+	Imported *Imported `json:"imported,omitempty"`
+}
+
+// Imported is the template an import installed, and the notes the conversion
+// made about what it left out or draws differently
+type Imported struct {
+	ID      string   `json:"id"`
+	Name    string   `json:"name"`
+	Version string   `json:"version"`
+	Notes   []string `json:"notes"`
 }
 
 // Emitter receives every event of every job as it is emitted. A transport

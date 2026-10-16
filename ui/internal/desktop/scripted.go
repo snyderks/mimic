@@ -4,14 +4,16 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 )
 
 // scripted answers the dialogs and links a test build cannot show, from a
 // folder a test controls. A save dialog answers with a path under saved/, an
-// open dialog with the first file in open/, a folder dialog with folder/, and a
-// question agrees unless confirm-no exists. Every call is appended to events.log,
-// so a test can tell that a link or a folder was opened without anything opening
+// open dialog with the first file in open/, or every one when it can choose
+// several, a folder dialog with folder/, and a question agrees unless
+// confirm-no exists. Every call is appended to events.log, so a test can tell
+// that a link or a folder was opened without anything opening
 type scripted struct {
 	dir string
 	mu  sync.Mutex
@@ -50,28 +52,47 @@ func (s *scripted) pickFile(req PickRequest) (string, error) {
 		s.record("save", path)
 		return path, nil
 	}
-	dir, err := s.sub("open")
+	paths, err := s.offered()
 	if err != nil {
 		return "", err
 	}
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return "", err
-	}
-	var names []string
-	for _, e := range entries {
-		if e.Type().IsRegular() {
-			names = append(names, e.Name())
-		}
-	}
-	sort.Strings(names)
-	if len(names) == 0 {
+	if len(paths) == 0 {
 		s.record("open", "")
 		return "", nil
 	}
-	path := filepath.Join(dir, names[0])
-	s.record("open", path)
-	return path, nil
+	s.record("open", paths[0])
+	return paths[0], nil
+}
+
+// pickFiles answers a dialog that can choose several files with every file in
+// open/, or with none
+func (s *scripted) pickFiles(PickRequest) ([]string, error) {
+	paths, err := s.offered()
+	if err != nil {
+		return nil, err
+	}
+	s.record("open", strings.Join(paths, "\t"))
+	return paths, nil
+}
+
+// offered lists the files in open/ by name
+func (s *scripted) offered() ([]string, error) {
+	dir, err := s.sub("open")
+	if err != nil {
+		return nil, err
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	paths := []string{}
+	for _, e := range entries {
+		if e.Type().IsRegular() {
+			paths = append(paths, filepath.Join(dir, e.Name()))
+		}
+	}
+	sort.Strings(paths)
+	return paths, nil
 }
 
 func (s *scripted) pickFolder(PickRequest) (string, error) {

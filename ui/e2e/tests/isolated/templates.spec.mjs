@@ -1,3 +1,4 @@
+import path from "node:path";
 import { test, expect } from "../../fixtures.mjs";
 
 // These tests install templates, which the app keeps for good, so they run on
@@ -105,4 +106,30 @@ test("a template exported from the editor is imported from its file, listed as i
   await editor.show();
   await expect(editor.page.locator("#ed-draft-select")).toContainText("Portable");
   await scratch.reset();
+});
+
+test("a Proxyshop PSD is converted, installed and listed, and can be removed like any other", async ({ templates, scratch, page }) => {
+  await scratch.offer("normal.psd", { path: path.resolve(import.meta.dirname, "../../../testassets/proxyshop/normal.psd") });
+  await templates.show();
+  await page.locator("#tm-import-psd").click();
+
+  const status = page.locator("#tm-import-status");
+  await expect(status.locator(".tm-import-text")).toHaveText("Imported Normal (Proxyshop) 0.1.0. It is marked in the list below.", { timeout: 60_000 });
+  const entry = templates.entry("Normal (Proxyshop)");
+  await expect(entry).toHaveClass(/tp-new/);
+  await expect(entry).toContainText("proxyshop.normal");
+  await expect(entry).toContainText("Converted from the Proxyshop template normal.psd");
+  await expect(entry.getByRole("button", { name: "Select" })).toBeVisible();
+  expect((await scratch.events()).filter(([kind]) => kind === "open").map(([, p]) => path.basename(p))).toEqual(["normal.psd"]);
+
+  // A second import keeps the first and installs the next version beside it
+  await page.locator("#tm-import-psd").click();
+  await expect(status.locator(".tm-import-text")).toHaveText("Imported Normal (Proxyshop) 0.1.1. It is marked in the list below.", { timeout: 60_000 });
+  await expect(entry.locator(".tp-label")).toHaveText(["0.1.1", "0.1.0"]);
+
+  for (const v of ["0.1.1", "0.1.0"]) {
+    await entry.getByRole("button", { name: `Remove Normal (Proxyshop) ${v}` }).click();
+    await expect(page.locator("#toasts .toast").last()).toHaveText(`Removed Normal (Proxyshop) ${v}`);
+  }
+  await expect(templates.libraryList.locator(".tp-template", { hasText: "proxyshop.normal" })).toHaveCount(0);
 });

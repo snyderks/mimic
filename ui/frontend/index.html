@@ -933,6 +933,16 @@ Sideboard
               </p>
               <div class="tm-actions">
                 <button
+                  id="tm-import-psd"
+                  class="btn"
+                  type="button"
+                  data-feature="templates.importProxyshop"
+                  data-tip="Convert a Proxyshop PSD, or the front and back of one template, into a template"
+                >
+                  <svg class="icon"><use href="icons.svg#i-layers" /></svg>Import
+                  Proxyshop PSD
+                </button>
+                <button
                   id="tm-import-template"
                   class="btn"
                   type="button"
@@ -951,6 +961,7 @@ Sideboard
                   template
                 </button>
               </div>
+              <div id="tm-import-status" class="tp-foot tm-import" hidden></div>
               <div id="tm-library-list" class="template-library">
                 <p class="dim tm-empty">Loading catalog…</p>
               </div>

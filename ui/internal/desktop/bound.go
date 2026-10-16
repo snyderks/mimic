@@ -81,6 +81,8 @@ type templatesAPI interface {
 	SetFeature(c templates.FeatureChoice) (*templates.DetailsView, error)
 	Import(req templates.ImportRequest) (templates.ImportResult, error)
 	Remove(req templates.RemoveRequest) (templates.RemoveResult, error)
+	ImportProxyshop(paths []string) (string, error)
+	CancelImport(jobID string) error
 }
 
 // Templates is the bound template service

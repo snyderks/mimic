@@ -4,6 +4,7 @@ import { app, effect } from "../state.js";
 import { toast } from "../components/toast.js";
 import { loadActiveTemplate } from "../components/templatePicker.js";
 import { describeShape, layoutChips } from "../supports.js";
+import { notesHeading, outcome, progressLine } from "../psdimport.js";
 import { editor } from "./editor.js";
 
 // The Templates mode keeps everything about templates in one place. Library
@@ -14,6 +15,11 @@ import { editor } from "./editor.js";
 const TABS = ["library", "defaults", "overrides"];
 let tab = "library";
 let busy = false;
+// importJob is the Proxyshop import running, and fresh the template the last one
+// installed, which the library marks until the page leaves it
+let importJob = "";
+let fresh = "";
+let scrollToFresh = false;
 
 // changed tells the rest of the page the templates moved, the same event a
 // switch in any other place sends
@@ -210,7 +216,7 @@ async function loadLibrary() {
     ...rows.map((t) =>
       h(
         "div",
-        { class: "tp-template" },
+        { class: `tp-template${t.name === fresh ? " tp-new" : ""}`, "data-template": t.name },
         h(
           "div",
           { class: "tp-head" },
@@ -226,6 +232,10 @@ async function loadLibrary() {
       ),
     ),
   );
+  if (scrollToFresh) {
+    scrollToFresh = false;
+    list.querySelector(".tp-new")?.scrollIntoView({ block: "nearest" });
+  }
 }
 
 // select activates a version, downloading it first when it is not cached,
@@ -340,6 +350,92 @@ function refresh() {
   if (tab === "defaults") loadDefaults();
 }
 
+// importPSD converts a Proxyshop PSD the person chooses into a template, with
+// the conversion's progress above the list and a way to stop it. The template it
+// installs is marked in the list, and what the conversion left out is offered
+// under the result
+async function importPSD() {
+  if (importJob) return;
+  const panel = $("tm-import-status");
+  const button = $("tm-import-psd");
+  let started;
+  try {
+    started = await api.importProxyshop();
+  } catch (err) {
+    toast(err.message, "err", 7000);
+    return;
+  }
+  if (!started) return;
+  importJob = started.jobId;
+  button.disabled = true;
+  let stopping = false;
+  let last = { step: "", frac: 0 };
+  const bar = h("div", { class: "bar" });
+  const text = h("span", { class: "tm-import-text" }, progressLine("", 0));
+  const stop = h("button", { type: "button", class: "btn subtle", style: "min-height:0;height:24px" }, icon("stop"), "Stop");
+  stop.addEventListener("click", async () => {
+    stopping = true;
+    stop.disabled = true;
+    text.textContent = progressLine(last.step, last.frac, true);
+    try {
+      await api.cancelImport(started.jobId);
+    } catch (err) {
+      toast(err.message, "err", 6000);
+    }
+  });
+  panel.className = "tp-foot tm-import";
+  panel.setAttribute("aria-busy", "true");
+  panel.hidden = false;
+  const meter = h("div", { class: "progress", role: "progressbar", "aria-label": "Import progress", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": "0" }, bar);
+  panel.replaceChildren(h("div", { class: "tm-import-head" }, text, stop), meter);
+  let imported = null;
+  let error = "";
+  try {
+    const end = await api.importEvents(started.jobId, (step, frac) => {
+      last = { step, frac };
+      bar.style.width = `${Math.round(frac * 100)}%`;
+      meter.setAttribute("aria-valuenow", String(Math.round(frac * 100)));
+      if (!stopping) text.textContent = progressLine(step, frac);
+    });
+    imported = end.imported;
+  } catch (err) {
+    error = err.message;
+  } finally {
+    importJob = "";
+    button.disabled = false;
+    panel.removeAttribute("aria-busy");
+  }
+  showImportOutcome(outcome(imported, error));
+}
+
+// showImportOutcome says how an import ended, with its notes behind a disclosure
+// and a button that puts the panel away
+function showImportOutcome(o) {
+  const panel = $("tm-import-status");
+  const close = h("button", { type: "button", class: "btn subtle icon-only", "aria-label": "Dismiss", style: "min-height:0;height:24px" }, icon("close"));
+  close.addEventListener("click", () => {
+    panel.hidden = true;
+    panel.replaceChildren();
+  });
+  panel.className = `tp-foot tm-import ${o.kind}`;
+  const parts = [h("div", { class: "tm-import-head" }, h("span", { class: "tm-import-text", role: "status" }, o.text), close)];
+  if (o.kind === "ok") {
+    parts.push(
+      o.notes.length
+        ? h("details", { class: "tm-import-notes" }, h("summary", {}, notesHeading(o.notes.length)), h("ul", {}, ...o.notes.map((n) => h("li", {}, n))))
+        : h("span", {}, notesHeading(0)),
+    );
+  }
+  panel.replaceChildren(...parts);
+  if (o.kind !== "ok") return;
+  fresh = o.id;
+  scrollToFresh = true;
+  toast(o.title, "ok");
+  // A template for other faces may now render them, which the rest of the page
+  // hears about, and the library is read again with the new one marked
+  changed();
+}
+
 // importTemplate installs a .mimic file the person chooses beside the templates that were
 // downloaded. A different copy of a version that is installed is asked about first, since
 // importing it takes the place of the one there
@@ -367,6 +463,7 @@ async function importTemplate() {
 
 export function initTemplates() {
   $("tm-import-template").addEventListener("click", importTemplate);
+  $("tm-import-psd").addEventListener("click", importPSD);
   for (const chip of document.querySelectorAll("#mode-templates [data-tab]")) {
     chip.addEventListener("click", () => showTab(chip.dataset.tab));
   }

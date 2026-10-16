@@ -79,6 +79,32 @@ func (s *System) PickFile(req PickRequest) (string, error) {
 	return cancelled(d.PromptForSingleSelection())
 }
 
+// PickFiles shows an open dialog that can choose several files and returns
+// their paths, or none when the user cancelled
+func (s *System) PickFiles(req PickRequest) ([]string, error) {
+	if s.scripted != nil {
+		return s.scripted.pickFiles(req)
+	}
+	d := s.app.Dialog.OpenFile().AttachToWindow(s.window).SetTitle(req.Title).CanChooseFiles(true).CanChooseDirectories(false)
+	if req.Dir != "" {
+		d.SetDirectory(req.Dir)
+	}
+	for _, f := range req.Filters {
+		d.AddFilter(f.Name, f.Pattern)
+	}
+	paths, err := d.PromptForMultipleSelection()
+	if err != nil {
+		return nil, apierr.Wrap(apierr.Internal, "showing the dialog", err)
+	}
+	out := []string{}
+	for _, p := range paths {
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return out, nil
+}
+
 // PickFolder shows a folder dialog attached to the window and returns the chosen
 // path, or an empty string when the user cancelled
 func (s *System) PickFolder(req PickRequest) (string, error) {

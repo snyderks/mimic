@@ -196,6 +196,35 @@
   font-size: 12px;
 }
 
+.tm-import {
+  margin-bottom: 8px;
+}
+
+.tm-import .tm-import-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tm-import .tm-import-text {
+  flex: 1;
+  color: var(--text);
+}
+
+.tm-import.err .tm-import-text {
+  color: var(--err);
+}
+
+.tm-import ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.template-library .tp-template.tp-new {
+  box-shadow: inset 3px 0 0 var(--accent);
+  background: var(--accent-weak);
+}
+
 /* Mode rail */
 .rail {
   grid-area: rail;

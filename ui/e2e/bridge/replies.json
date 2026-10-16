@@ -169,6 +169,9 @@
     },
     "single.zoom": {
       "state": "live"
+    },
+    "templates.importProxyshop": {
+      "state": "live"
     }
   },
   "Settings.Get": {},

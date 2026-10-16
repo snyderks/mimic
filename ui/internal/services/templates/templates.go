@@ -9,6 +9,7 @@ import (
 	"maps"
 	"slices"
 	"strings"
+	"sync/atomic"
 
 	"github.com/odevine/mimic/engine/frame"
 	"github.com/odevine/mimic/engine/manifest"
@@ -22,8 +23,12 @@ import (
 	"github.com/odevine/mimic/ui/internal/workspace"
 )
 
-// Service lists, downloads and switches templates
-type Service struct{ ws *workspace.Workspace }
+// Service lists, downloads, imports and switches templates
+type Service struct {
+	ws *workspace.Workspace
+	// importing is set while an import runs, since only one runs at a time
+	importing atomic.Bool
+}
 
 // New returns the service over a workspace
 func New(ws *workspace.Workspace) *Service { return &Service{ws: ws} }

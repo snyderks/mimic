@@ -411,6 +411,29 @@ export const scenes = {
       await page.locator("#run-rows > li", { hasText: "Llanowar Elves" }).click();
     },
   },
+  "templates-proxyshop": {
+    run: async ({ bridge, page }) => {
+      const version = { version: "0.1.0", label: "0.1.0", cached: true, selectable: true, active: false, action: "select", removable: true, restorable: false };
+      const m15 = { name: "mimic.m15", title: "Modern frame (M15)", description: "The modern card frame", standard: true, shapes: [{ role: "single", kind: "standard" }], versions: [{ ...version, version: "1.0.0", label: "1.0.0", active: true, action: "" }] };
+      const normal = { name: "proxyshop.normal", title: "Normal (Proxyshop)", description: "Converted from the Proxyshop template normal.psd", standard: true, shapes: [{ role: "single", kind: "standard" }], versions: [version] };
+      bridge.reply("Templates.List", [m15]);
+      bridge.reply("System.PickFiles", ["/psd/normal.psd"]);
+      bridge.reply("Templates.ImportProxyshop", "imp-1");
+      await bridge.boot();
+      await page.locator("#template-trigger").click();
+      await expect(page.locator("#tm-library .tp-template")).toHaveCount(1);
+      await page.locator("#tm-import-psd").click();
+      await expect.poll(() => bridge.calledWith("Templates.ImportProxyshop").length).toBe(1);
+      bridge.reply("Templates.List", [m15, normal]);
+      const notes = ["normal: the layer Shadow is left out", "normal: the Nyx group draws without its glow", "the Legendary Crown group has no color for gold, so gold cards use the first"];
+      await bridge.job("imp-1", [done(1, { imported: { id: "proxyshop.normal", name: "Normal (Proxyshop)", version: "0.1.0", notes } })]);
+      await expect(page.locator("#tm-library .tp-template.tp-new")).toHaveCount(1);
+      await page.locator("#tm-import-status summary").click();
+      await expect(page.locator("#tm-import-status li")).toHaveCount(3);
+      // The toast fades on a timer, so it is not part of the scene
+      await page.locator("#toasts").evaluate((el) => el.replaceChildren());
+    },
+  },
   "templates-library": {
     run: async ({ bridge, page }) => {
       const version = (v, extra) => ({ version: v, label: v, cached: true, selectable: true, active: false, action: "select", removable: true, restorable: true, ...extra });

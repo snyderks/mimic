@@ -70,12 +70,15 @@ Studio.Vocabulary() -> studio.VocabView
 System.Confirm(desktop.ConfirmRequest) -> bool
 System.OpenURL(string) !
 System.PickFile(desktop.PickRequest) -> string !
+System.PickFiles(desktop.PickRequest) -> []string !
 System.PickFolder(desktop.PickRequest) -> string !
 System.SmokeResult(bool, string)
 System.Version() -> desktop.VersionInfo
 Templates.Active() -> templates.ActiveView
+Templates.CancelImport(string) !
 Templates.Faces() -> []pipeline.FaceRow
 Templates.Import(templates.ImportRequest) -> templates.ImportResult !
+Templates.ImportProxyshop([]string) -> string !
 Templates.List() -> []templates.TemplateView
 Templates.Remove(templates.RemoveRequest) -> templates.RemoveResult !
 Templates.Select(templates.SelectRequest) -> string !
@@ -440,6 +443,14 @@ jobs.Event struct {
 	log string (omitempty)
 	warmupMs int64 (omitempty)
 	warmupCards int (omitempty)
+	imported jobs.Imported (omitempty)
+}
+
+jobs.Imported struct {
+	id string
+	name string
+	version string
+	notes []string
 }
 
 list.Request struct {

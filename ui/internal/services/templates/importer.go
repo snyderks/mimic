@@ -54,6 +54,14 @@ func (s *Service) Import(req ImportRequest) (ImportResult, error) {
 	if path == "" {
 		return ImportResult{}, apierr.New(apierr.BadRequest, "Choose a template file to import")
 	}
+	return s.installBundle(path, req.Replace)
+}
+
+// installBundle checks that a .mimic file is a template this version of the app
+// can keep and read, and copies it into the cache under its id and version. A
+// file imported by hand and a template converted from Proxyshop both land in the
+// library this way
+func (s *Service) installBundle(path string, replace bool) (ImportResult, error) {
 	zp, err := template.NewZipAssetProvider(path)
 	if err != nil {
 		return ImportResult{}, apierr.Wrap(apierr.BadRequest, "That file is not a template this version of mimic can read", err)
@@ -89,7 +97,7 @@ func (s *Service) Import(req ImportRequest) (ImportResult, error) {
 		case same:
 			res.Same = true
 			return res, nil
-		case !req.Replace:
+		case !replace:
 			res.Exists = true
 			return res, nil
 		}

@@ -80,3 +80,19 @@ func TestScriptedLinksAreRecordedAndNeverOpened(t *testing.T) {
 		}
 	}
 }
+
+func TestScriptedOpenOfSeveralAnswersWithEveryFile(t *testing.T) {
+	s := &scripted{dir: t.TempDir()}
+	if got, err := s.pickFiles(PickRequest{}); err != nil || got == nil || len(got) != 0 {
+		t.Fatalf("with nothing to open = %q, %v, want an empty list", got, err)
+	}
+	open := filepath.Join(s.dir, "open")
+	for _, n := range []string{"tf-front.psd", "tf-back.psd"} {
+		os.WriteFile(filepath.Join(open, n), []byte("x"), 0o644)
+	}
+	os.Mkdir(filepath.Join(open, "0-dir"), 0o755)
+	got, _ := s.pickFiles(PickRequest{})
+	if len(got) != 2 || filepath.Base(got[0]) != "tf-back.psd" || filepath.Base(got[1]) != "tf-front.psd" {
+		t.Errorf("open = %q, want both PSDs", got)
+	}
+}

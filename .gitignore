@@ -50,6 +50,15 @@ card.png
 # local path instead of from the repo
 *.psd
 *.psb
+/assets/
+# ui/testassets/proxyshop/normal.psd is a tiny synthetic document the Proxyshop
+# import tests build by hand, not real frame art, so it is tracked
+!/ui/testassets/proxyshop/normal.psd
+
+# User-supplied font overrides. The dropped files are ignored while the
+# directory's README stays tracked
+/local-fonts/*
+!/local-fonts/README.md
 
 # Claude Code per-user settings. Shared .claude/settings.json stays tracked
 .claude/settings.local.json

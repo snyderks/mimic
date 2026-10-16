@@ -141,6 +141,7 @@ card.Data struct {
 	Power string
 	Toughness string
 	Loyalty string
+	Defense string
 	Colors []card.Color
 	ColorIdentity []card.Color
 	ProducedMana []card.Color
@@ -168,6 +169,7 @@ card.Face struct {
 	Power string
 	Toughness string
 	Loyalty string
+	Defense string
 	Colors []card.Color
 	ColorIndicator []card.Color
 	Artist string
@@ -249,6 +251,7 @@ cardlist.ShapedCard struct {
 	Power string
 	Toughness string
 	Loyalty string
+	Defense string
 	Colors []card.Color
 	ColorIdentity []card.Color
 	ProducedMana []card.Color

@@ -202,9 +202,12 @@ func TestVocabularyNamesOnlyWhatTheEngineAccepts(t *testing.T) {
 	if len(v.BlendModes) != 16 {
 		t.Errorf("%d blend modes, want the engine's 16", len(v.BlendModes))
 	}
+	// A count such as rows is listed by its name and compares with a number
 	for _, c := range v.Conditions {
 		if _, err := frame.Compile(c); err != nil {
-			t.Errorf("condition %q: %v", c, err)
+			if _, cerr := frame.Compile(c + ">3"); cerr != nil {
+				t.Errorf("condition %q: %v, and as a count: %v", c, err, cerr)
+			}
 		}
 	}
 	for _, s := range v.Slots {

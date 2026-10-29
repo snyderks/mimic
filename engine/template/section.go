@@ -156,13 +156,36 @@ func LayoutSection(sec manifest.Section, style TextBoxSpec, avoid image.Rectangl
 		return out, err
 	}
 	// The text keeps out of the rectangle where each row landed without it, so a
-	// row beside it wraps narrower and the rows settle again
+	// row beside it wraps narrower and the rows settle again. Wrapping narrower
+	// makes a row taller, which moves the rows under it, so each pass measures
+	// against the tops the pass before it produced until they stop moving. A
+	// layout that keeps changing stops at the cap and takes the last pass
 	tops := make([]int, len(out.Rows))
 	for i, r := range out.Rows {
 		tops[i] = r.Box.Y
 	}
-	return layoutRows(sec, style, &placedAvoid{rect: avoid, tops: tops}, rows)
+	for range avoidPasses {
+		next, err := layoutRows(sec, style, &placedAvoid{rect: avoid, tops: tops}, rows)
+		if err != nil {
+			return SectionLayout{}, err
+		}
+		out = next
+		settled := true
+		for i, r := range next.Rows {
+			if r.Box.Y != tops[i] {
+				tops[i], settled = r.Box.Y, false
+			}
+		}
+		if settled {
+			break
+		}
+	}
+	return out, nil
 }
+
+// avoidPasses is how many times the rows are laid out again to settle around an
+// avoided rectangle. The fixtures settle in two
+const avoidPasses = 8
 
 // placedAvoid is a rectangle to keep out of with the place each row's box is
 // taken to start at while it is measured

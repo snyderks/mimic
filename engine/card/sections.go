@@ -9,9 +9,10 @@ import (
 // Row is one ability, chapter, or level a card's rules text splits into, for a
 // template that lays each out as a row of its own
 type Row struct {
-	// Cost is what the row is activated for: a loyalty ability's cost such as
-	// "+1" or "−3", or the mana a class level costs
-	Cost string
+	// Loyalty is a loyalty ability's cost, such as "+1" or "−3"
+	Loyalty string
+	// Mana is the mana a class level costs
+	Mana string
 	// Chapters are the saga chapters the row is for, as printed, such as "I" and
 	// "II" for a row the card prints as "I, II —"
 	Chapters []string
@@ -36,21 +37,26 @@ func SplitNames() []string { return []string{SplitChapters, SplitLevels, SplitLo
 
 // The fields of a row a template can draw beside it or pick an image by
 const (
-	FieldCost    = "cost"
+	FieldLoyalty = "loyalty"
+	FieldMana    = "mana"
 	FieldChapter = "chapter"
 	FieldLevel   = "level"
 )
 
 // RowFields lists the fields of a row, sorted
-func RowFields() []string { return []string{FieldChapter, FieldCost, FieldLevel} }
+func RowFields() []string { return []string{FieldChapter, FieldLevel, FieldLoyalty, FieldMana} }
 
 // Values are what the row holds for a field: one value, several for the
 // chapters of a row that covers more than one, or none when the row has none
 func (r Row) Values(field string) []string {
 	switch field {
-	case FieldCost:
-		if r.Cost != "" {
-			return []string{r.Cost}
+	case FieldLoyalty:
+		if r.Loyalty != "" {
+			return []string{r.Loyalty}
+		}
+	case FieldMana:
+		if r.Mana != "" {
+			return []string{r.Mana}
 		}
 	case FieldChapter:
 		return r.Chapters
@@ -70,7 +76,7 @@ func (r Row) Has(field string) bool { return len(r.Values(field)) > 0 }
 // a planeswalker's badges differ by sign and not by number. Any other value is
 // its own key
 func ValueKey(field, value string) string {
-	if field != FieldCost || !loyaltyCostRe.MatchString(value) {
+	if field != FieldLoyalty || !loyaltyCostRe.MatchString(value) {
 		return value
 	}
 	switch {
@@ -86,7 +92,7 @@ func ValueKey(field, value string) string {
 // themselves, for a check of a template's image names
 func ValueKeys(field string) []string {
 	switch field {
-	case FieldCost:
+	case FieldLoyalty:
 		return []string{"minus", "plus", "zero"}
 	case FieldChapter:
 		return []string{"I", "II", "III", "IV", "V", "VI", "VII"}
@@ -102,7 +108,7 @@ var (
 
 // Rows splits rules text into rows the way split names. Text that the split
 // does not recognize, such as a static ability on a planeswalker or the lines
-// before a saga's first chapter, becomes a row with no cost or chapter. An
+// before a saga's first chapter, becomes a row with no key field of its own. An
 // unknown split returns no rows
 func Rows(split, text string) []Row {
 	text = strings.TrimSpace(text)
@@ -128,7 +134,7 @@ func loyaltyRows(lines []string) []Row {
 	for _, line := range lines {
 		cost, text, ok := strings.Cut(line, ": ")
 		if ok && loyaltyCostRe.MatchString(cost) {
-			rows = append(rows, Row{Cost: cost, Text: text})
+			rows = append(rows, Row{Loyalty: cost, Text: text})
 			continue
 		}
 		rows = append(rows, Row{Text: line})
@@ -150,15 +156,15 @@ func chapterRows(lines []string) []Row {
 	return rows
 }
 
-// levelRows starts a row at each level line, which carries the level's cost,
-// and reads the lines after it as that level's abilities. The lines before the
-// first are the abilities a class starts with, a row with no cost or level since
-// the card prints neither for it
+// levelRows starts a row at each level line, which carries the level's mana
+// cost, and reads the lines after it as that level's abilities. The lines before
+// the first are the abilities a class starts with, a row with no mana or level
+// since the card prints neither for it
 func levelRows(lines []string) []Row {
 	var rows []Row
 	for _, line := range lines {
 		if m := classLevelRe.FindStringSubmatch(line); m != nil {
-			rows = append(rows, Row{Cost: m[1], Level: m[2]})
+			rows = append(rows, Row{Mana: m[1], Level: m[2]})
 			continue
 		}
 		rows = appendLine(rows, Row{Text: line}, line)
@@ -467,12 +473,14 @@ func levelerBoxNames() []string {
 }
 
 // flipsideType is the card type of a modal double-faced card's other face,
-// which the face prints at its bottom, such as "Creature" or "Planeswalker"
-// flipsideType reads the other face's subtype when it prints exactly one,
-// such as "Bird" or a planeswalker's own name ("Tibalt"), and its last
-// supertype or type otherwise ("Creature", "Sorcery"). A card can print more
-// than one subtype, and the rule about which single word to show then does
-// not generalize cleanly, so this keeps to the common case rather than guess
+// which the face prints at its bottom, such as "Tibalt" or "Sorcery". A card
+// printed in Modern Horizons 3 or earlier prints the last type or subtype on
+// the other face's type line, which is what this reads: the subtype where the
+// face prints exactly one, such as "Bird" or a planeswalker's own name, and the
+// last supertype or type otherwise. A card printed after it ignores subtypes,
+// which needs the set the card comes from to tell apart (#138). A face that
+// prints more than one subtype has no single word to show, so it falls back to
+// its type
 func flipsideType(d *Data) string {
 	o, ok := otherFace(d)
 	if !ok {

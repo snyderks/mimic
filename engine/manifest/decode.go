@@ -17,6 +17,9 @@ const (
 	MaxBytes = 4 << 20
 	// MaxDimension is the largest width, height, or position in a canvas
 	MaxDimension = 20000
+	// MaxParts is the largest number of art sets a template may name. A family
+	// template merged from the m15 frames names 270, so the ceiling leaves room
+	// for a family a few times that size
 	MaxParts     = 1024
 	MaxVariants  = 128
 	MaxLayouts   = 64

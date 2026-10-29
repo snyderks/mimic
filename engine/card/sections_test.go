@@ -25,8 +25,8 @@ func TestLoyaltyRows(t *testing.T) {
 	rows := Rows(SplitLoyalty, jace.OracleText)
 	var costs, keys []string
 	for _, r := range rows {
-		costs = append(costs, r.Cost)
-		keys = append(keys, ValueKey(FieldCost, r.Cost))
+		costs = append(costs, r.Loyalty)
+		keys = append(keys, ValueKey(FieldLoyalty, r.Loyalty))
 	}
 	if want := []string{"+2", "0", "−1", "−12"}; !reflect.DeepEqual(costs, want) {
 		t.Errorf("costs = %q, want %q", costs, want)
@@ -48,10 +48,10 @@ func TestLoyaltyRowsKeepAStaticAbilityWithoutACost(t *testing.T) {
 	if len(rows) != 4 {
 		t.Fatalf("rows = %d, want 4: %+v", len(rows), rows)
 	}
-	if rows[0].Has(FieldCost) || rows[0].Text[:15] != "As Tibalt enter" {
+	if rows[0].Has(FieldLoyalty) || rows[0].Text[:15] != "As Tibalt enter" {
 		t.Errorf("row 0 = %+v, want the static ability with no cost", rows[0])
 	}
-	if rows[3].Cost != "−8" || rows[3].Text != "Exile all graveyards. Add {R}{R}{R}." {
+	if rows[3].Loyalty != "−8" || rows[3].Text != "Exile all graveyards. Add {R}{R}{R}." {
 		t.Errorf("row 3 = %+v", rows[3])
 	}
 	if tibalt.Loyalty != "5" || TextFor("loyalty", tibalt) != "5" {
@@ -104,8 +104,8 @@ func TestLevelRows(t *testing.T) {
 	rows := Rows(SplitLevels, SectionText(class, true))
 	want := []Row{
 		{Text: "You have no maximum hand size."},
-		{Cost: "{2}{U}", Level: "2", Text: "When this Class becomes level 2, draw two cards."},
-		{Cost: "{4}{U}", Level: "3", Text: "Whenever you draw a card, put a +1/+1 counter on target creature you control."},
+		{Mana: "{2}{U}", Level: "2", Text: "When this Class becomes level 2, draw two cards."},
+		{Mana: "{4}{U}", Level: "3", Text: "Whenever you draw a card, put a +1/+1 counter on target creature you control."},
 	}
 	if !reflect.DeepEqual(rows, want) {
 		t.Errorf("rows = %+v\nwant %+v", rows, want)
@@ -257,6 +257,26 @@ func TestEveryBoxNameIsKnown(t *testing.T) {
 	for _, n := range []string{"level_up", "level_2_pt", "prototype_mana", "chaos", "flipside_type", "loyalty", "defense"} {
 		if !names[n] {
 			t.Errorf("TextBoxNames lacks %q", n)
+		}
+	}
+}
+
+// TestFlipsideTypeOfACreatureFaceIsItsSubtype covers the rule a card printed in
+// Modern Horizons 3 or earlier follows, which every card follows until the set a
+// card comes from reaches this (#138). A creature face with one subtype prints
+// the subtype, where a layout written before this printed "Creature"
+func TestFlipsideTypeOfACreatureFaceIsItsSubtype(t *testing.T) {
+	for _, tc := range []struct {
+		line, want string
+	}{
+		{"Creature — Bird", "Bird"},
+		{"Legendary Creature — God", "God"},
+		{"Artifact Creature — Construct", "Construct"},
+		{"Creature — Human Soldier", "Creature"},
+	} {
+		d := &Data{Layout: "modal_dfc", Faces: []Face{{TypeLine: "Instant"}, {TypeLine: tc.line}}}
+		if got := TextFor("flipside_type", d); got != tc.want {
+			t.Errorf("flipside of %q = %q, want %q", tc.line, got, tc.want)
 		}
 	}
 }

@@ -47,14 +47,17 @@ func faceKey(face string) string {
 	return face
 }
 
-// keyField is the row field that sets a row apart for a split: the cost of a
-// loyalty ability or a class level, and a saga's chapter. A row without it,
-// such as a static ability, sits in the section's plain column
+// keyField is the row field that sets a row apart for a split: a loyalty
+// ability's cost, a class level's mana cost, or a saga's chapter. A row without
+// it, such as a static ability, sits in the section's plain column
 func keyField(split string) string {
-	if split == card.SplitChapters {
+	switch split {
+	case card.SplitChapters:
 		return card.FieldChapter
+	case card.SplitLevels:
+		return card.FieldMana
 	}
-	return card.FieldCost
+	return card.FieldLoyalty
 }
 
 // sectionPiece is one thing a section draws: an image of a part moved with its
@@ -79,6 +82,14 @@ type placedSection struct {
 	rows   []card.Row
 	images []sectionPiece
 	texts  []sectionPiece
+}
+
+// hides reports whether the request leaves a piece of a section out of the
+// drawing, by the section's own key or the piece's. A description names a row's
+// text and the images and texts beside it in the same kinds, so a hide that
+// names what a description reports leaves out what it reports
+func (ps *placedSection) hides(req template.RenderRequest, kind, key string) bool {
+	return req.Hides("section", ps.job.sec.Key) || req.Hides(kind, key)
 }
 
 // placeSection splits the face's rules text into the section's rows, lays them

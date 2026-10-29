@@ -58,10 +58,13 @@ type RenderRequest struct {
 	// Hide names items of the layout to leave out of the drawing, each as the kind, a
 	// colon and the item's key, the way a description names them: "layer:frame" for a stack
 	// entry's id, "art:0" for an art window's index, "symbol:set" for a symbol's name and
-	// "text:title" for a text box's key. A hidden item is only not drawn. The rest of the
-	// card is laid out as it would be with the item there, so text still steps around a
-	// layer that is hidden and a box still gives way to one, and a description reports the
-	// item as it would draw. A name that matches nothing hides nothing
+	// "text:title" for a text box's key. What a section draws is named the same way, as
+	// "text:abilities.rows[1]" for a row's text and "layer:abilities.bands[1]" for an image
+	// between rows, and "section:abilities" leaves out everything one section draws. A
+	// hidden item is only not drawn. The rest of the card is laid out as it would be with
+	// the item there, so text still steps around a layer that is hidden and a box still
+	// gives way to one, and a description reports the item as it would draw. A name that
+	// matches nothing hides nothing
 	Hide []string
 	// Show names stack entries to draw even where their condition does not hold, as
 	// "layer:crown". A forced entry is there for the rest of the card, so text steps around

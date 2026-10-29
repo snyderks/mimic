@@ -127,6 +127,9 @@ func Render(ctx context.Context, t *template.Template, req template.RenderReques
 				continue
 			}
 			for _, p := range ps.images {
+				if ps.hides(req, "layer", p.key) {
+					continue
+				}
 				out = append(out, p.imageNode(t, scale, authored))
 			}
 		}
@@ -180,12 +183,18 @@ func Render(ctx context.Context, t *template.Template, req template.RenderReques
 		}
 	}
 
+	// A section's rows are text to draw like any box, so the text step covers the
+	// boxes and the rows together
+	textJobs := len(boxes.jobs)
+	for _, ps := range placed {
+		textJobs += len(ps.texts)
+	}
 	var outNodes []canvas.Node
 	for i, job := range boxes.jobs {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		req.Report(stepText, lerp(fracTextFrom, fracTextTo, i, len(boxes.jobs)))
+		req.Report(stepText, lerp(fracTextFrom, fracTextTo, i, textJobs))
 		docW, docH := geo.Width, geo.Height
 		if job.space == template.SpaceOutput {
 			docW, docH = geo.DeliveredWidth, geo.DeliveredHeight
@@ -203,10 +212,16 @@ func Render(ctx context.Context, t *template.Template, req template.RenderReques
 			nodes = append(nodes, got...)
 		}
 	}
+	done := len(boxes.jobs)
 	for _, ps := range placed {
 		for _, p := range ps.texts {
 			if err := ctx.Err(); err != nil {
 				return nil, err
+			}
+			req.Report(stepText, lerp(fracTextFrom, fracTextTo, done, textJobs))
+			done++
+			if ps.hides(req, "text", p.key) {
+				continue
 			}
 			node, err := p.textNode(geo.Width, geo.Height)
 			if err != nil {

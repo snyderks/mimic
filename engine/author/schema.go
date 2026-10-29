@@ -150,7 +150,7 @@ var fieldNotes = map[reflect.Type]map[string]map[string]any{
 	},
 	reflect.TypeOf(manifest.RowItem{}): {
 		"for":    {"enum": append([]string{""}, card.RowFields()...), "description": "The row field the item shows. Empty draws for every row"},
-		"anchor": {"enum": []string{"", "center", "top"}},
+		"anchor": {"enum": manifest.RowAnchors()},
 		"y":      {"description": "Where the anchor of the row the item was authored against was"},
 	},
 	reflect.TypeOf(manifest.Header{}): {

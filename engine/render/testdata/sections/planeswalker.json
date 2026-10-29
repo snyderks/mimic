@@ -37,8 +37,8 @@
           "plain": { "x": 70, "width": 610 },
           "gap": 12,
           "items": [
-            { "for": "cost", "parts": { "plus": "badge_plus", "minus": "badge_minus", "zero": "badge_zero" }, "y": 720 },
-            { "for": "cost", "rect": { "x": 30, "y": 708, "width": 50, "height": 24 }, "text": { "fontSize": 18, "font": "title", "color": "#FFFFFF", "align": "center", "vAlign": "center" }, "y": 720 }
+            { "for": "loyalty", "parts": { "plus": "badge_plus", "minus": "badge_minus", "zero": "badge_zero" }, "y": 720 },
+            { "for": "loyalty", "rect": { "x": 30, "y": 708, "width": 50, "height": 24 }, "text": { "fontSize": 18, "font": "title", "color": "#FFFFFF", "align": "center", "vAlign": "center" }, "y": 720 }
           ],
           "bands": { "part": "band" },
           "avoidLayer": "loyalty",

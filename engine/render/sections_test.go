@@ -212,6 +212,56 @@ func TestPlaneswalkerAbilitiesAreRowsWithBadges(t *testing.T) {
 	sameColor(t, img, image.Pt(682, center(rows[0].Authored).Y), "e8e0d0")
 }
 
+// TestHidingWhatASectionDrawsLeavesItOut covers a hide that names what a
+// description reports for a section, by the piece and by the whole section. The
+// rows are laid out either way, so what is left is in the same place
+func TestHidingWhatASectionDrawsLeavesItOut(t *testing.T) {
+	tm := sectionTemplate(t, "planeswalker")
+	jace := template.RenderRequest{Card: cardFixture(t, "jace_the_mind_sculptor")}
+	d := describe(t, tm, jace)
+	got := items(t, d)
+	rows := sectionRows(t, d, "abilities")
+	if len(rows) != 4 {
+		t.Fatalf("rows = %d, want 4", len(rows))
+	}
+	badge := got["layer:abilities.rows[0].items[0]"].Authored
+	if badge.Empty() {
+		t.Fatal("the first badge is not placed")
+	}
+	at := image.Pt(badge.Min.X+2, badge.Min.Y+2)
+	band := image.Pt(682, center(rows[1].Authored).Y)
+	plain := renderCard(t, tm, jace)
+	sameColor(t, plain, at, "30a030")
+	sameColor(t, plain, band, "b0a890")
+
+	// The badge beside the first row goes, leaving the text box under it, and the
+	// band under the second row stays
+	one := jace
+	one.Hide = []string{"layer:abilities.rows[0].items[0]"}
+	img := renderCard(t, tm, one)
+	sameColor(t, img, at, "f0ead6")
+	sameColor(t, img, band, "b0a890")
+
+	// The whole section goes, badges and bands with it
+	all := jace
+	all.Hide = []string{"section:abilities"}
+	img = renderCard(t, tm, all)
+	sameColor(t, img, at, "f0ead6")
+	sameColor(t, img, band, "e8e0d0")
+
+	// Hiding draws less and lays out the same, so a description still reports
+	// every row where it was
+	after := sectionRows(t, describe(t, tm, all), "abilities")
+	if len(after) != len(rows) {
+		t.Fatalf("rows with the section hidden = %d, want %d", len(after), len(rows))
+	}
+	for i, r := range after {
+		if r.Authored != rows[i].Authored {
+			t.Errorf("row %d is at %v with the section hidden, was %v", i, r.Authored, rows[i].Authored)
+		}
+	}
+}
+
 func TestPlaneswalkerWithThreeAbilitiesTakesTheShortBox(t *testing.T) {
 	tm := sectionTemplate(t, "planeswalker")
 	got := items(t, describe(t, tm, template.RenderRequest{Card: cardFixture(t, "liliana_of_the_veil")}))

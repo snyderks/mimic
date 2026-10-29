@@ -95,6 +95,11 @@ func (v *validator) span(path string, s *Span) {
 	}
 }
 
+// RowAnchors lists where an item beside a row can sit, with empty as the middle
+// of the row's text. The schema an editor checks a layout against reads the same
+// list, so an anchor the validator takes is one the editor offers
+func RowAnchors() []string { return []string{"", "center", "top", "first-line"} }
+
 // rowField checks a row field an item or a header names, which may be empty
 // only where empty means every row
 func (v *validator) rowField(path, field string, emptyOK bool) {
@@ -130,16 +135,14 @@ func (v *validator) rowItem(path string, it RowItem, used map[string]bool) {
 	keys := card.ValueKeys(it.For)
 	for _, key := range sortedKeys(it.Parts) {
 		v.partRef(path+".parts."+key, it.Parts[key], used)
-		if it.For == card.FieldCost && !slices.Contains(keys, key) {
-			v.c.warnf(path+".parts."+key, "a cost is keyed by its sign, which is %s, so %q never draws", strings.Join(keys, ", "), key)
+		if it.For == card.FieldLoyalty && !slices.Contains(keys, key) {
+			v.c.warnf(path+".parts."+key, "a loyalty cost is keyed by its sign, which is %s, so %q never draws", strings.Join(keys, ", "), key)
 		}
 	}
 	if it.Format != "" && image {
 		v.c.warnf(path+".format", "an image item prints no text, so the format does nothing")
 	}
-	switch it.Anchor {
-	case "", "center", "top", "first-line":
-	default:
+	if !slices.Contains(RowAnchors(), it.Anchor) {
 		v.c.errorf(path+".anchor", "%q is not center, top or first-line", it.Anchor)
 	}
 	if it.Step < 0 || it.Step > MaxDimension {

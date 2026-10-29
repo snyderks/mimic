@@ -23,10 +23,10 @@
           "rect": { "x": 372, "y": 210, "width": 330, "height": 720 },
           "text": { "fontSize": 20, "color": "#000000", "paddingX": 8 },
           "gap": 12,
-          "header": { "for": "cost", "height": 52 },
+          "header": { "for": "mana", "height": 52 },
           "items": [
-            { "for": "cost", "part": "level_bar", "anchor": "top", "y": 400 },
-            { "for": "cost", "rect": { "x": 380, "y": 406, "width": 150, "height": 28 }, "text": { "fontSize": 18, "color": "#FFFFFF", "vAlign": "center" }, "format": "{}:", "anchor": "top", "y": 400 },
+            { "for": "mana", "part": "level_bar", "anchor": "top", "y": 400 },
+            { "for": "mana", "rect": { "x": 380, "y": 406, "width": 150, "height": 28 }, "text": { "fontSize": 18, "color": "#FFFFFF", "vAlign": "center" }, "format": "{}:", "anchor": "top", "y": 400 },
             { "for": "level", "rect": { "x": 560, "y": 406, "width": 134, "height": 28 }, "text": { "fontSize": 18, "font": "title", "color": "#FFFFFF", "align": "right", "vAlign": "center" }, "format": "Level {}", "anchor": "top", "y": 400 }
           ]
         }

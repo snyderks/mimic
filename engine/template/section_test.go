@@ -95,10 +95,67 @@ func TestLayoutSectionHoldsRoomForAHeader(t *testing.T) {
 	}
 }
 
+// TestLayoutSectionSettlesRowsAroundAnAvoidedRectangle covers a rectangle that
+// makes a row wrap narrower and grow, which moves the rows under it down. A
+// single pass measures those rows at the tops they had before the rectangle, so
+// the rows settle only because the pass repeats until the tops stop moving
+func TestLayoutSectionSettlesRowsAroundAnAvoidedRectangle(t *testing.T) {
+	sec, style := sectionSpec(400)
+	rows := sectionRowsOf(strings.Repeat("word ", 12), "b", "c")
+	avoid := image.Rect(60, 100, 200, 200)
+	plain, err := LayoutSection(sec, style, image.Rectangle{}, rows)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lay, err := LayoutSection(sec, style, avoid, rows)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The rectangle has to rewrap the first row and make it taller, or the rest
+	// of the test covers nothing
+	was := plain.Rows[0].InkBottom - plain.Rows[0].InkTop
+	got := lay.Rows[0].InkBottom - lay.Rows[0].InkTop
+	if got <= was {
+		t.Fatalf("row 0 is %d tall beside the rectangle and %d without it, want taller", got, was)
+	}
+
+	// Every row lands at the top it was measured at, so none is laid out for a
+	// place it does not end up in
+	tops := make([]int, len(lay.Rows))
+	for i, r := range lay.Rows {
+		tops[i] = r.Box.Y
+	}
+	again, err := layoutRows(sec, style, &placedAvoid{rect: avoid, tops: tops}, rows)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, r := range again.Rows {
+		if r.Box.Y != tops[i] || r.InkTop != lay.Rows[i].InkTop || r.InkBottom != lay.Rows[i].InkBottom {
+			t.Errorf("row %d measured at %d lands at %d, %d..%d, want %d..%d", i, tops[i], r.Box.Y,
+				r.InkTop, r.InkBottom, lay.Rows[i].InkTop, lay.Rows[i].InkBottom)
+		}
+	}
+
+	// One pass puts a row somewhere it was not measured for, which is what
+	// repeating the pass settles
+	first := make([]int, len(plain.Rows))
+	for i, r := range plain.Rows {
+		first[i] = r.Box.Y
+	}
+	one, err := layoutRows(sec, style, &placedAvoid{rect: avoid, tops: first}, rows)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if one.Rows[1].Box.Y == lay.Rows[1].Box.Y {
+		t.Error("one pass settles this fixture, so it does not cover the repeat")
+	}
+}
+
 func TestScaleSectionScalesItsPixels(t *testing.T) {
 	sec := manifest.Section{
 		Rect: manifest.Rect{X: 100, Y: 200, Width: 300, Height: 400}, Text: manifest.TextStyle{FontSize: 40},
-		Gap: 20, Header: &manifest.Header{For: "cost", Height: 60},
+		Gap: 20, Header: &manifest.Header{For: "loyalty", Height: 60},
 		Items:   []manifest.RowItem{{Y: 1000, Step: 50, Rect: &manifest.Rect{X: 10, Y: 20, Width: 30, Height: 40}}},
 		Divider: &manifest.RowPart{Part: "d", Y: 500},
 	}

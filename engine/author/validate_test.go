@@ -4,9 +4,14 @@ import (
 	"encoding/json"
 	"image"
 	"image/color"
+	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"testing/fstest"
+
+	"github.com/odevine/mimic/engine/card"
+	"github.com/odevine/mimic/engine/manifest"
 )
 
 // edited is the small template with one file replaced
@@ -161,5 +166,38 @@ func refsIn(s string) []string {
 		}
 		s = s[i+len(marker):]
 		out = append(out, s[:strings.Index(s, `"`)])
+	}
+}
+
+// TestLayoutSchemaOffersEveryRowItemChoice guards the enums a schema-driven
+// editor offers against the lists the validator checks, since an enum that
+// falls behind rejects a layout the engine accepts
+func TestLayoutSchemaOffersEveryRowItemChoice(t *testing.T) {
+	raw, err := LayoutSchema()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc struct {
+		Defs map[string]struct {
+			Properties map[string]struct {
+				Enum []string `json:"enum"`
+			} `json:"properties"`
+		} `json:"$defs"`
+	}
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		t.Fatal(err)
+	}
+	item, ok := doc.Defs["RowItem"]
+	if !ok {
+		t.Fatal("layout schema defines no RowItem")
+	}
+	if got := item.Properties["anchor"].Enum; !reflect.DeepEqual(got, manifest.RowAnchors()) {
+		t.Errorf("anchor enum = %q, want %q", got, manifest.RowAnchors())
+	}
+	if got := item.Properties["anchor"].Enum; !slices.Contains(got, "first-line") {
+		t.Errorf("anchor enum = %q, which leaves out the anchor the validator takes", got)
+	}
+	if got := item.Properties["for"].Enum; !reflect.DeepEqual(got, append([]string{""}, card.RowFields()...)) {
+		t.Errorf("for enum = %q, want the row fields %q and empty", got, card.RowFields())
 	}
 }
